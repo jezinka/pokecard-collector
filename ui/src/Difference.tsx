@@ -26,8 +26,12 @@ const Difference = () => {
             "http://localhost:3000/cardset/"
         );
         setCardsets(response.data);
-        setCardset(response.data[0].substring(0, response.data[0].indexOf(";")))
+        setCardset(getId(response.data[0]));
     };
+
+    function getId(c: string) {
+        return c.substring(0, c.indexOf(";"));
+    }
 
     return (
         <div>
@@ -37,7 +41,8 @@ const Difference = () => {
                     Nazwa zestawu:
                     <select value={cardset} onChange={(event) => setCardset(event.target.value)}>
                         {cardsets.map((c:string) => {
-                            return <option key={c.substring(0, c.indexOf(";"))} value={c.substring(0, c.indexOf(";"))}>{c.substring(c.indexOf(";")+1)}</option>
+                            let id = getId(c);
+                            return <option key={id} value={id}>{c.substring(c.indexOf(";")+1)}</option>
                         })}
                     </select>
                 </label>
