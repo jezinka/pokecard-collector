@@ -1,33 +1,21 @@
 import {useState} from 'react'
 import './App.css'
-import axios from "axios";
+import {getByName, savePokemon} from "./requests";
 
 const All = () => {
     const [cards, setCards] = useState([]);
     const [name, setName] = useState("");
 
     const fetchCards = async (event: any) => {
-        event.preventDefault();
+        if (event != null) {
+            event.preventDefault();
+        }
+
         if (name != "") {
-            const response = await axios.get(
-                "http://localhost:3000/pokemonCards/" + name
-            );
-            setCards(response.data.data);
+            const response = await getByName(name);
+            setCards(response.data);
         }
     };
-
-    const addPokemon = async (card: any) => {
-        const response = await axios.post(
-            "http://localhost:3000/addPokemon/", card
-        );
-        if (response) {
-            console.log(`zapisano - ${card.name}`);
-        }
-    };
-
-    function savePokemon(card: any) {
-        addPokemon(card);
-    }
 
     return (
         <div>
@@ -40,16 +28,22 @@ const All = () => {
                 <button type="submit">Submit</button>
             </form>
 
-            <div className="gallery">
+            <div>
                 {cards.map((card, index) => (
-                    <img
-                        key={index}
-                        src={card.images.small}
-                        alt={card.name}
-                        width="200"
-                        height="300"
-                        onClick={() => savePokemon(card)}
-                    />
+                    <span style={{position: "relative"}}>
+                        <button style={{position: "absolute", transform: "translate(319%, 555%)"}}>&#8661;</button>
+                        <button style={{position: "absolute", transform: "translate(300%, 660%)"}}>&#43;</button>
+                        <img className={card['missing'] ? 'missing' : ''}
+                             key={index}
+                             src={card['images']['small']}
+                             alt={card['name']}
+                             width="200"
+                             height="300"
+                             onClick={async () => {
+                                 await savePokemon(card);
+                                 fetchCards(null);
+                             }}
+                        /></span>
                 ))}
             </div>
         </div>
