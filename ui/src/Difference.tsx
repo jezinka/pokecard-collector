@@ -4,18 +4,43 @@ import {fetchAllCardsets, getDifferenceByCardset, savePokemon} from "./requests"
 
 const Difference = () => {
     const [cards, setCards] = useState([]);
+    const [serie, setSerie] = useState("test");
     const [cardset, setCardset] = useState("");
     const [cardsets, setCardsets] = useState([]);
+    const [filteredCardsets, setFilteredCardsets] = useState([]);
+    const [series, setSeries] = useState([]);
 
     useEffect(() => {
         fetchCardsets();
     }, []);
 
-    const fetchCards = async (event: any) => {
-        if (event != null) {
-            event.preventDefault();
-        }
 
+    useEffect(() => {
+        if (filteredCardsets.length > 0) {
+            setCardset(filteredCardsets[0]['id']);
+        }
+    }, [filteredCardsets])
+
+    useEffect(() => {
+        fetchCards()
+    }, [cardset]);
+
+    useEffect(() => {
+            if (series.length > 0) {
+                setSerie(series[0]['name']);
+            }
+        },
+        [series]);
+
+    useEffect(() => {
+        const foundSerie = series.find(s => s['name'] == serie);
+        if (foundSerie != undefined) {
+            const ids: object[] = foundSerie['id'];
+            setFilteredCardsets(cardsets.filter(c => ids.indexOf(c['id']) != -1));
+        }
+    }, [serie])
+
+    const fetchCards = async () => {
         if (cardset != "") {
             const response = await getDifferenceByCardset(cardset);
             setCards(response.data);
@@ -24,29 +49,40 @@ const Difference = () => {
 
     const fetchCardsets = async () => {
         const response = await fetchAllCardsets();
-        setCardsets(response.data);
-        setCardset(getId(response.data[0]));
+        setSeries(response.data['series']);
+        setCardsets(response.data['cardsets']);
     };
-
-    function getId(c: string) {
-        return c.substring(0, c.indexOf(";"));
-    }
 
     return (
         <div>
             <h1>Różnica</h1>
-            <form onSubmit={fetchCards}>
-                <label>
-                    Nazwa zestawu:
-                    <select value={cardset} onChange={(event) => setCardset(event.target.value)}>
-                        {cardsets.map((c: string) => {
-                            let id = getId(c);
-                            return <option key={id} value={id}>{c.substring(c.indexOf(";") + 1)}</option>
-                        })}
-                    </select>
-                </label>
-                <button type="submit">Submit</button>
-            </form>
+            <label>
+                Nazwa serii:
+                <select value={serie} onChange={(event) => {
+                    setSerie(event.target.value);
+                }}>
+                    {series.map((s: any) => {
+                        let id = s['name'];
+                        return <option key={id} value={id}>{s['name']} [{s['count']}/{s['total']}]</option>
+                    })}
+                </select>
+            </label>
+
+            <label>
+                Nazwa zestawu:
+                <select value={cardset} onChange={(event) => {
+                    setCardset(event.target.value);
+                }}>
+                    {filteredCardsets.map((c: any) => {
+                        let id = c['id'];
+                        return <option key={id} value={id}>{c['name']} [{c['count']}/{c['total']}]</option>
+                    })}
+                </select>
+                <img
+                    width="30"
+                    height="30"
+                    src={`https://images.pokemontcg.io/${cardset}/symbol.png`}/>
+            </label>
             <div className="gallery">
                 {cards.map((card, index) => (
                     <img className={card['missing'] ? 'missing' : ''}
@@ -57,7 +93,7 @@ const Difference = () => {
                          height="300"
                          onClick={async () => {
                              await savePokemon(card);
-                             fetchCards(null);
+                             fetchCards();
                          }}
                     />
                 ))}

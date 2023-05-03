@@ -26,7 +26,7 @@ export class AppController {
     }
 
     @Get('cardset')
-    async getCardset(): Promise<string[]> {
+    async getCardset(): Promise<object> {
 
         const counts = new Map<string, number>();
         for (const item of this.mySet.map((card) => card['set'].id)) {
@@ -34,19 +34,58 @@ export class AppController {
             counts.set(item, count + 1);
         }
 
-        const cardsets: string[] = [];
-        let sortedCounts = new Map([...counts.entries()].sort((a, b) => b[1] - a[1]));
-        for (const [id, count] of sortedCounts) {
+        const cardsets: object[] = [];
+        const series: object[] = [];
+
+        for (const [id, count] of counts) {
             let foundCardset = this.cardset.find((cardset) => cardset['id'] == id);
-            cardsets.push(`${id};${foundCardset['name']} (${count}/${foundCardset['total']})`);
+            cardsets.push({
+                "id": id,
+                "count": count,
+                "total": foundCardset['total'],
+                "name": foundCardset['name'],
+                "series": foundCardset['series']
+            });
+
+            const foundSerie = series.find(s => s['name'] == foundCardset['series']);
+            if (foundSerie != undefined) {
+                foundSerie['id'].push(id);
+                foundSerie['total'] += foundCardset['total'];
+                foundSerie['count'] += count;
+            } else {
+                series.push({
+                    "id": [id],
+                    "name": foundCardset['series'],
+                    "total": foundCardset['total'],
+                    "count": count
+                });
+            }
         }
 
         for (const cardset of this.cardset) {
-            if (!cardsets.some((c) => c.startsWith(cardset['id']))) {
-                cardsets.push(`${cardset['id']};${cardset['name']} (0/${cardset['total']})`);
+            if (!cardsets.some((c) => c['id'].startsWith(cardset['id']))) {
+                cardsets.push({
+                    "id": cardset['id'],
+                    "count": 0,
+                    "total": cardset['total'],
+                    "name": cardset['name'],
+                    "series": cardset['series']
+                });
+                const foundSerie = series.find(s => s['name'] == cardset['series']);
+                if (foundSerie != undefined) {
+                    foundSerie['id'].push(cardset['id']);
+                    foundSerie['total'] += cardset['total'];
+                } else {
+                    series.push({
+                        "id": [cardset['id']],
+                        "name": cardset['series'],
+                        "total": cardset['total'],
+                        "count": 0
+                    });
+                }
             }
         }
-        return cardsets;
+        return {"cardsets": _.sortBy(cardsets, "count").reverse(), "series": _.sortBy(series, "count").reverse()};
     }
 
     @Get('all/:cardset')
